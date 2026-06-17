@@ -1,0 +1,90 @@
+{"id": "short_000_t10", "category": "short", "prompt": "Where is Seattle?", "max_new_tokens": 10}
+{"id": "short_000_t50", "category": "short", "prompt": "Where is Seattle?", "max_new_tokens": 50}
+{"id": "short_000_t100", "category": "short", "prompt": "Where is Seattle?", "max_new_tokens": 100}
+{"id": "short_001_t10", "category": "short", "prompt": "What is KV cache?", "max_new_tokens": 10}
+{"id": "short_001_t50", "category": "short", "prompt": "What is KV cache?", "max_new_tokens": 50}
+{"id": "short_001_t100", "category": "short", "prompt": "What is KV cache?", "max_new_tokens": 100}
+{"id": "short_002_t10", "category": "short", "prompt": "Explain GPU memory briefly.", "max_new_tokens": 10}
+{"id": "short_002_t50", "category": "short", "prompt": "Explain GPU memory briefly.", "max_new_tokens": 50}
+{"id": "short_002_t100", "category": "short", "prompt": "Explain GPU memory briefly.", "max_new_tokens": 100}
+{"id": "short_003_t10", "category": "short", "prompt": "What is model serving?", "max_new_tokens": 10}
+{"id": "short_003_t50", "category": "short", "prompt": "What is model serving?", "max_new_tokens": 50}
+{"id": "short_003_t100", "category": "short", "prompt": "What is model serving?", "max_new_tokens": 100}
+{"id": "short_004_t10", "category": "short", "prompt": "Define latency.", "max_new_tokens": 10}
+{"id": "short_004_t50", "category": "short", "prompt": "Define latency.", "max_new_tokens": 50}
+{"id": "short_004_t100", "category": "short", "prompt": "Define latency.", "max_new_tokens": 100}
+{"id": "short_005_t10", "category": "short", "prompt": "Define throughput.", "max_new_tokens": 10}
+{"id": "short_005_t50", "category": "short", "prompt": "Define throughput.", "max_new_tokens": 50}
+{"id": "short_005_t100", "category": "short", "prompt": "Define throughput.", "max_new_tokens": 100}
+{"id": "short_006_t10", "category": "short", "prompt": "What is FastAPI?", "max_new_tokens": 10}
+{"id": "short_006_t50", "category": "short", "prompt": "What is FastAPI?", "max_new_tokens": 50}
+{"id": "short_006_t100", "category": "short", "prompt": "What is FastAPI?", "max_new_tokens": 100}
+{"id": "short_007_t10", "category": "short", "prompt": "What is a tokenizer?", "max_new_tokens": 10}
+{"id": "short_007_t50", "category": "short", "prompt": "What is a tokenizer?", "max_new_tokens": 50}
+{"id": "short_007_t100", "category": "short", "prompt": "What is a tokenizer?", "max_new_tokens": 100}
+{"id": "short_008_t10", "category": "short", "prompt": "What is batching?", "max_new_tokens": 10}
+{"id": "short_008_t50", "category": "short", "prompt": "What is batching?", "max_new_tokens": 50}
+{"id": "short_008_t100", "category": "short", "prompt": "What is batching?", "max_new_tokens": 100}
+{"id": "short_009_t10", "category": "short", "prompt": "What is model inference?", "max_new_tokens": 10}
+{"id": "short_009_t50", "category": "short", "prompt": "What is model inference?", "max_new_tokens": 50}
+{"id": "short_009_t100", "category": "short", "prompt": "What is model inference?", "max_new_tokens": 100}
+{"id": "medium_000_t10", "category": "medium", "prompt": "Explain how KV cache improves transformer inference performance.", "max_new_tokens": 10}
+{"id": "medium_000_t50", "category": "medium", "prompt": "Explain how KV cache improves transformer inference performance.", "max_new_tokens": 50}
+{"id": "medium_000_t100", "category": "medium", "prompt": "Explain how KV cache improves transformer inference performance.", "max_new_tokens": 100}
+{"id": "medium_001_t10", "category": "medium", "prompt": "Describe the difference between latency and throughput in model serving.", "max_new_tokens": 10}
+{"id": "medium_001_t50", "category": "medium", "prompt": "Describe the difference between latency and throughput in model serving.", "max_new_tokens": 50}
+{"id": "medium_001_t100", "category": "medium", "prompt": "Describe the difference between latency and throughput in model serving.", "max_new_tokens": 100}
+{"id": "medium_002_t10", "category": "medium", "prompt": "Explain why batching can improve GPU utilization.", "max_new_tokens": 10}
+{"id": "medium_002_t50", "category": "medium", "prompt": "Explain why batching can improve GPU utilization.", "max_new_tokens": 50}
+{"id": "medium_002_t100", "category": "medium", "prompt": "Explain why batching can improve GPU utilization.", "max_new_tokens": 100}
+{"id": "medium_003_t10", "category": "medium", "prompt": "Describe what happens during autoregressive decoding.", "max_new_tokens": 10}
+{"id": "medium_003_t50", "category": "medium", "prompt": "Describe what happens during autoregressive decoding.", "max_new_tokens": 50}
+{"id": "medium_003_t100", "category": "medium", "prompt": "Describe what happens during autoregressive decoding.", "max_new_tokens": 100}
+{"id": "medium_004_t10", "category": "medium", "prompt": "Explain the role of attention masks during generation.", "max_new_tokens": 10}
+{"id": "medium_004_t50", "category": "medium", "prompt": "Explain the role of attention masks during generation.", "max_new_tokens": 50}
+{"id": "medium_004_t100", "category": "medium", "prompt": "Explain the role of attention masks during generation.", "max_new_tokens": 100}
+{"id": "medium_005_t10", "category": "medium", "prompt": "Describe how FastAPI can expose a model serving endpoint.", "max_new_tokens": 10}
+{"id": "medium_005_t50", "category": "medium", "prompt": "Describe how FastAPI can expose a model serving endpoint.", "max_new_tokens": 50}
+{"id": "medium_005_t100", "category": "medium", "prompt": "Describe how FastAPI can expose a model serving endpoint.", "max_new_tokens": 100}
+{"id": "medium_006_t10", "category": "medium", "prompt": "Explain why TTFT is important for user experience.", "max_new_tokens": 10}
+{"id": "medium_006_t50", "category": "medium", "prompt": "Explain why TTFT is important for user experience.", "max_new_tokens": 50}
+{"id": "medium_006_t100", "category": "medium", "prompt": "Explain why TTFT is important for user experience.", "max_new_tokens": 100}
+{"id": "medium_007_t10", "category": "medium", "prompt": "Describe the difference between prefill and decode stages.", "max_new_tokens": 10}
+{"id": "medium_007_t50", "category": "medium", "prompt": "Describe the difference between prefill and decode stages.", "max_new_tokens": 50}
+{"id": "medium_007_t100", "category": "medium", "prompt": "Describe the difference between prefill and decode stages.", "max_new_tokens": 100}
+{"id": "medium_008_t10", "category": "medium", "prompt": "Explain how tokenization converts text into model inputs.", "max_new_tokens": 10}
+{"id": "medium_008_t50", "category": "medium", "prompt": "Explain how tokenization converts text into model inputs.", "max_new_tokens": 50}
+{"id": "medium_008_t100", "category": "medium", "prompt": "Explain how tokenization converts text into model inputs.", "max_new_tokens": 100}
+{"id": "medium_009_t10", "category": "medium", "prompt": "Describe why runtime tracing is useful in model serving.", "max_new_tokens": 10}
+{"id": "medium_009_t50", "category": "medium", "prompt": "Describe why runtime tracing is useful in model serving.", "max_new_tokens": 50}
+{"id": "medium_009_t100", "category": "medium", "prompt": "Describe why runtime tracing is useful in model serving.", "max_new_tokens": 100}
+{"id": "long_000_t10", "category": "long", "prompt": "Explain the full request flow of a minimal LLM serving system, from receiving an HTTP request to returning generated text to the user.", "max_new_tokens": 10}
+{"id": "long_000_t50", "category": "long", "prompt": "Explain the full request flow of a minimal LLM serving system, from receiving an HTTP request to returning generated text to the user.", "max_new_tokens": 50}
+{"id": "long_000_t100", "category": "long", "prompt": "Explain the full request flow of a minimal LLM serving system, from receiving an HTTP request to returning generated text to the user.", "max_new_tokens": 100}
+{"id": "long_001_t10", "category": "long", "prompt": "Compare normal autoregressive decoding and KV-cache-based decoding. Explain what computation is reused and what still needs to be computed.", "max_new_tokens": 10}
+{"id": "long_001_t50", "category": "long", "prompt": "Compare normal autoregressive decoding and KV-cache-based decoding. Explain what computation is reused and what still needs to be computed.", "max_new_tokens": 50}
+{"id": "long_001_t100", "category": "long", "prompt": "Compare normal autoregressive decoding and KV-cache-based decoding. Explain what computation is reused and what still needs to be computed.", "max_new_tokens": 100}
+{"id": "long_002_t10", "category": "long", "prompt": "Describe how a production model serving system might handle many concurrent user requests, including request queues, batching, streaming responses, and observability metrics.", "max_new_tokens": 10}
+{"id": "long_002_t50", "category": "long", "prompt": "Describe how a production model serving system might handle many concurrent user requests, including request queues, batching, streaming responses, and observability metrics.", "max_new_tokens": 50}
+{"id": "long_002_t100", "category": "long", "prompt": "Describe how a production model serving system might handle many concurrent user requests, including request queues, batching, streaming responses, and observability metrics.", "max_new_tokens": 100}
+{"id": "long_003_t10", "category": "long", "prompt": "Explain how prompt length and generated token count affect different latency metrics in an LLM serving system.", "max_new_tokens": 10}
+{"id": "long_003_t50", "category": "long", "prompt": "Explain how prompt length and generated token count affect different latency metrics in an LLM serving system.", "max_new_tokens": 50}
+{"id": "long_003_t100", "category": "long", "prompt": "Explain how prompt length and generated token count affect different latency metrics in an LLM serving system.", "max_new_tokens": 100}
+{"id": "long_004_t10", "category": "long", "prompt": "Describe the relationship between prefill latency, decode latency, TTFT, end-to-end latency, and tokens per second.", "max_new_tokens": 10}
+{"id": "long_004_t50", "category": "long", "prompt": "Describe the relationship between prefill latency, decode latency, TTFT, end-to-end latency, and tokens per second.", "max_new_tokens": 50}
+{"id": "long_004_t100", "category": "long", "prompt": "Describe the relationship between prefill latency, decode latency, TTFT, end-to-end latency, and tokens per second.", "max_new_tokens": 100}
+{"id": "long_005_t10", "category": "long", "prompt": "Explain why GPU utilization matters in LLM serving and how batching can improve throughput.", "max_new_tokens": 10}
+{"id": "long_005_t50", "category": "long", "prompt": "Explain why GPU utilization matters in LLM serving and how batching can improve throughput.", "max_new_tokens": 50}
+{"id": "long_005_t100", "category": "long", "prompt": "Explain why GPU utilization matters in LLM serving and how batching can improve throughput.", "max_new_tokens": 100}
+{"id": "long_006_t10", "category": "long", "prompt": "Describe the purpose of runtime tracing in a model serving system and what metrics should be collected for debugging and benchmarking.", "max_new_tokens": 10}
+{"id": "long_006_t50", "category": "long", "prompt": "Describe the purpose of runtime tracing in a model serving system and what metrics should be collected for debugging and benchmarking.", "max_new_tokens": 50}
+{"id": "long_006_t100", "category": "long", "prompt": "Describe the purpose of runtime tracing in a model serving system and what metrics should be collected for debugging and benchmarking.", "max_new_tokens": 100}
+{"id": "long_007_t10", "category": "long", "prompt": "Explain how a simple FastAPI-based model serving system can evolve toward a more production-like serving architecture.", "max_new_tokens": 10}
+{"id": "long_007_t50", "category": "long", "prompt": "Explain how a simple FastAPI-based model serving system can evolve toward a more production-like serving architecture.", "max_new_tokens": 50}
+{"id": "long_007_t100", "category": "long", "prompt": "Explain how a simple FastAPI-based model serving system can evolve toward a more production-like serving architecture.", "max_new_tokens": 100}
+{"id": "long_008_t10", "category": "long", "prompt": "Compare single-request serving, request batching, and continuous batching in terms of latency and throughput tradeoffs.", "max_new_tokens": 10}
+{"id": "long_008_t50", "category": "long", "prompt": "Compare single-request serving, request batching, and continuous batching in terms of latency and throughput tradeoffs.", "max_new_tokens": 50}
+{"id": "long_008_t100", "category": "long", "prompt": "Compare single-request serving, request batching, and continuous batching in terms of latency and throughput tradeoffs.", "max_new_tokens": 100}
+{"id": "long_009_t10", "category": "long", "prompt": "Describe how KV cache memory grows during generation and why memory management becomes important in high-throughput serving systems.", "max_new_tokens": 10}
+{"id": "long_009_t50", "category": "long", "prompt": "Describe how KV cache memory grows during generation and why memory management becomes important in high-throughput serving systems.", "max_new_tokens": 50}
+{"id": "long_009_t100", "category": "long", "prompt": "Describe how KV cache memory grows during generation and why memory management becomes important in high-throughput serving systems.", "max_new_tokens": 100}

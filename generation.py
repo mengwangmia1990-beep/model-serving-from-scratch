@@ -7,10 +7,14 @@ import time
 model_name = config.MODEL_NAME
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(model_name)
-max_new_tokens = config.MAX_NEW_TOKENS
 
-def generate_with_cache(prompt: str, runtime_trace: bool = True) -> str:
-    trace = {}
+def generate_with_cache(
+        prompt: str, 
+        runtime_trace: bool = True,
+        max_new_tokens: int | None = None) -> str:
+    
+    if max_new_tokens is None:
+        max_new_tokens = config.DEFAULT_MAX_NEW_TOKENS
 
     request_start = time.perf_counter()
     first_token_id = None
