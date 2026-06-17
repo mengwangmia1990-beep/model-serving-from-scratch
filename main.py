@@ -1,7 +1,7 @@
 from generation import generate_with_cache
 
 def main():
-    query = "hello!"
+    query = "where is seattle located at?"
     result = generate_with_cache(query)
     print(result)
 
