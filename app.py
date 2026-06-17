@@ -16,13 +16,15 @@ def generate(request: UserRequest):
 
     if not query:
         return {
-            "response": "failed",
-            "reason": "User input cannot be empty."
+            "status": "failed",
+            "response": "User input cannot be empty.",
+            "runtime_trace": None
         }
     
-    response = generate_with_cache(query)
+    response, trace = generate_with_cache(query)
 
     return {
         "status": "success",
-        "response": response
+        "response": response,
+        "runtime_trace": trace
     }
