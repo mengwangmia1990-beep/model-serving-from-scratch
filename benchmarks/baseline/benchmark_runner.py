@@ -23,11 +23,13 @@ import config
 from statistics import mean, median
 import numpy as np
 from collections import defaultdict
+import uuid
 
 CURRENT_DIR = Path(__file__).resolve().parent # model-serving-from-scratch/benchmarks/baseline/
 BASELINE_CASE_FILE = CURRENT_DIR / config.BENCHMARK_BASELINE_CASES
 BASELINE_RESULT_FILE = CURRENT_DIR / "results" / config.BENCHMARK_BASELINE_RESULTS
 BASELINE_SUMMARY_FILE = CURRENT_DIR / "results" / config.BENCHMARK_BASELINE_SUMMARY
+RUNTIME_TRACE_FILE = PROJECT_ROOT / config.RUNTIME_TRACE_LOG_FILE
 
 def reset_output():
     with open(BASELINE_RESULT_FILE, "w"):
@@ -114,8 +116,22 @@ def generate_summary_report():
     write_to_file(BASELINE_SUMMARY_FILE, summary_report)
 
 
+def find_trace_by_request_id(request_id):
+    if not RUNTIME_TRACE_FILE.exists():
+        return None
+
+    with open(RUNTIME_TRACE_FILE, "r", encoding="utf-8") as f:
+        for line in reversed(f.readlines()):
+            trace = json.loads(line)
+            if trace.get("request_id") == request_id:
+                return trace
+
+    return None
+
+
 def main():
     reset_output()
+    id = 0
 
     with open(BASELINE_CASE_FILE) as f:
         for line in f:
@@ -124,11 +140,13 @@ def main():
             prompt = case["prompt"]
             category = case["category"]
             max_new_tokens = case["max_new_tokens"]
+            request_id = f"baseline-{str(uuid.uuid4())}"
 
-            response, trace = generate_with_cache(prompt, True, max_new_tokens)
+            response = generate_with_cache(prompt, True, max_new_tokens, request_id)
+            trace = find_trace_by_request_id(request_id)
 
             result = {
-                "id": id,
+                "case_id": id,
                 "category": category,
                 "prompt": prompt,
                 "response": response,
@@ -137,8 +155,6 @@ def main():
             }
 
             write_to_file(BASELINE_RESULT_FILE, result)
-
-    # aggregate to summary
 
     generate_summary_report()
 
