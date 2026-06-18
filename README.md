@@ -9,6 +9,7 @@ The goal of this project is to understand how modern LLM inference works under t
 - KV Cache based inference using `past_key_values`
 - EOS token based early stopping
 - FastAPI serving endpoint
+- Streaming generation with incremental token delivery
 - Runtime tracing (TTFT, latency, throughput)
 - Request correlation via `request_id`
 - Benchmark framework with automated evaluation
@@ -30,7 +31,24 @@ The goal of this project is to understand how modern LLM inference works under t
 }
 ```
 
-### Runtime Trace
+## Architecture
+```text
+Request
+   |
+FastAPI
+   |
+Tokenizer
+   |
+Decode Loop
+   |
+├─ KV Cache
+├─ Streaming
+└─ Runtime Trace
+   |
+Response
+```
+
+## Runtime Trace
 Generation metrics are persisted to a runtime trace log and correlated with requests using `request_id`.  
 ```jsonl
 {
@@ -88,5 +106,6 @@ http://127.0.0.1:8000/docs
 
 ## Next Steps
 - Request batching
-- Continuous batching
-- vLLM-inspired optimizations
+- Continuous batching scheduler
+- Paged KV Cache (vLLM-inspired)
+- Benchmarking under concurrent workloads
