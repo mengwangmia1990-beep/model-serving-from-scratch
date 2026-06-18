@@ -74,7 +74,7 @@ Benchmark visualizations include:
 ![alt text](image-1.png)
 
 #### Throughput vs Output Length
-![alt text](benchmarks/baseline/results/avg_tps_vs_output_tokens.png)
+![alt text](image-2.png)
 
 ## Run Locally
 ```bash
