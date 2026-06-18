@@ -1,6 +1,6 @@
-# Model Serving From Scratch
+# KV Cache, FastAPI, streaming generation, runtime tracing, and benchmarking utilities
 
-A minimal LLM model serving project built with PyTorch, Hugging Face Transformers, KV Cache, FastAPI, and benchmarking utilities.
+A minimal LLM model serving project built with PyTorch, Hugging Face Transformers, KV Cache, FastAPI, streaming generation, runtime tracing, and benchmarking utilities.
 
 The goal of this project is to understand how modern LLM inference works under the hood by implementing the decoding loop manually instead of relying on high-level generation APIs.  
 
@@ -10,6 +10,7 @@ The goal of this project is to understand how modern LLM inference works under t
 - EOS token based early stopping
 - FastAPI serving endpoint
 - Runtime tracing (TTFT, latency, throughput)
+- Request correlation via `request_id`
 - Benchmark framework with automated evaluation
 - Performance visualization and analysis
 
@@ -17,22 +18,23 @@ The goal of this project is to understand how modern LLM inference works under t
 ### Request
 ```json
 { 
-    "query": 
-    "where is seattle?"
+    "query": "where is seattle located at?"
 }
 ```
 ### Response
 ```json
 { 
     "status": "success",
+    "request_id": "c0e50044-3148-47ee-9872-5e4cfaed94b9",
     "response": "where is seattle? stairs stairs stairs..." 
 }
 ```
 
 ### Runtime Trace
-Example metrics collected during generation:  
+Generation metrics are persisted to a runtime trace log and correlated with requests using `request_id`.  
 ```jsonl
 {
+    "request_id": "c0e50044-3148-47ee-9872-5e4cfaed94b9",
     "prompt_tokens": 6,
     "generated_tokens": 10,
     "total_tokens": 16,
@@ -52,6 +54,8 @@ Collected metrics:
 - End-to-End Latency in ms
 - Tokens Per Second (TPS)
 
+Benchmark results are automatically correlated with runtime traces through request Ids.
+
 Benchmark visualizations include:
 - Latency vs Output Length
 - Throughput vs Output Length
@@ -69,6 +73,9 @@ Benchmark visualizations include:
 #### TTFT vs Prompt Length
 ![alt text](image-1.png)
 
+#### Throughput vs Output Length
+![alt text](benchmarks/baseline/results/avg_tps_vs_output_tokens.png)
+
 ## Run Locally
 ```bash
 pip install -r requirements.txt
@@ -80,7 +87,6 @@ http://127.0.0.1:8000/docs
 ```
 
 ## Next Steps
-- Streaming generation
 - Request batching
 - Continuous batching
 - vLLM-inspired optimizations
