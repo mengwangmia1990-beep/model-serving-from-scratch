@@ -5,6 +5,8 @@ import config
 import time
 import json
 from pathlib import Path
+from models.request_state import RequestState
+from collections import deque
 
 model_name = config.MODEL_NAME
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -56,7 +58,6 @@ def set_trace(
         "tokens_per_second": tokens_per_second,
     }
     return trace
-
 
 def generate_token_ids_with_cache(
     prompt: str,
@@ -136,7 +137,7 @@ def generate_token_ids_with_cache(
         if trace is not None:
             write_trace(trace)
 
-
+# keep this method for baseline benchmark_runner
 def generate_with_cache(
         prompt: str, 
         runtime_trace: bool = True,
@@ -153,7 +154,6 @@ def generate_with_cache(
 
     return result
 
-
 def stream_with_cache(
         prompt: str,
         runtime_trace: bool = True,
@@ -165,3 +165,108 @@ def stream_with_cache(
         # time.sleep(0.5)
         yield(token_text)
 
+def finish_request(request: RequestState):
+    request.finished = True
+    request.request_end_time = time.perf_counter()
+    trace = set_trace(
+        request.runtime_trace,
+        request.request_id,
+        request.prompt_tokens,
+        request.generated_tokens,
+        request.request_start_time,
+        request.request_end_time,
+        request.first_token_time,
+        request.max_new_tokens,
+        request.hit_eos,
+    )
+    if trace:
+        write_trace(trace)
+
+# generate one token per each request for scheduler
+def step_request(request: RequestState) -> int | None:
+    if request.finished:
+        return None
+    
+    with torch.no_grad():
+        outputs = model(
+            input_ids=request.current_input_ids,
+            attention_mask=request.attention_mask,
+            past_key_values=request.past_key_values,
+            use_cache=True
+        )
+
+    # collect kv cache
+    request.past_key_values = outputs.past_key_values
+
+    # pick next token
+    last_logits = outputs.logits[:, -1, :]
+    next_token_id = torch.argmax(last_logits, dim=-1, keepdim=True) # token Id is logits index
+
+    if request.first_token_time is None:
+        request.first_token_time = time.perf_counter()
+
+    token_id = next_token_id.item()
+
+    # hit eos --> stop
+    if token_id == tokenizer.eos_token_id:
+        request.hit_eos = True
+        finish_request(request)
+        return None
+
+    request.current_input_ids = next_token_id
+    next_attention = torch.ones_like(next_token_id)
+    request.attention_mask = torch.cat([request.attention_mask, next_attention], dim=1)
+
+    request.generated_tokens += 1
+    request.generated_token_ids.append(token_id)
+
+    # generated tokens reach max new token limit --> stop
+    if request.generated_tokens >= request.max_new_tokens:
+        finish_request(request)
+
+    return token_id
+
+
+def run_scheduler(
+    initial_requests: list[RequestState],
+    pending_queue: deque[RequestState] | None = None,
+    max_active_requests: int = 3,
+):
+    active_requests = []
+    all_requests = []
+
+    if pending_queue is None:
+        pending_queue = deque()
+
+    pending_queue = deque(
+        list(initial_requests) + list(pending_queue)
+    )
+
+    while active_requests or pending_queue:
+        # fill upcoming requests from pending queue into active request list when there are available slots
+        # initial fill
+        # during generation fill
+        while pending_queue and len(active_requests) < max_active_requests:
+            req = pending_queue.popleft()
+            
+            active_requests.append(req)
+            all_requests.append(req)
+            print("admitted:", req.request_id)
+
+        print("active requests: ", [req.request_id for req in active_requests])
+        
+        for request in active_requests:
+            token_id = step_request(request)
+
+            if token_id is not None:
+                print(request.request_id, tokenizer.decode([token_id]))
+        
+        active_requests = [
+            r for r in active_requests
+            if not r.finished
+        ]
+
+    return {
+        r.request_id: tokenizer.decode(r.generated_token_ids, skip_special_tokens=True)
+        for r in all_requests
+    }

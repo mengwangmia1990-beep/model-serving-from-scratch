@@ -1,6 +1,5 @@
-# KV Cache, FastAPI, streaming generation, runtime tracing, and benchmarking utilities
-
-A minimal LLM model serving project built with PyTorch, Hugging Face Transformers, KV Cache, FastAPI, streaming generation, runtime tracing, and benchmarking utilities.
+# LLM Inference & Serving System
+A minimal LLM serving system built with PyTorch, Hugging Face Transformers, KV Cache, FastAPI, streaming generation, runtime tracing, benchmarking, and a toy continuous batching scheduler.
 
 The goal of this project is to understand how modern LLM inference works under the hood by implementing the decoding loop manually instead of relying on high-level generation APIs.  
 
@@ -14,6 +13,8 @@ The goal of this project is to understand how modern LLM inference works under t
 - Request correlation via `request_id`
 - Benchmark framework with automated evaluation
 - Performance visualization and analysis
+- Request state based generation lifecycle management
+- Toy continuous batching scheduler with active and pending request queues
 
 ## Example API
 ### Request
@@ -33,20 +34,62 @@ The goal of this project is to understand how modern LLM inference works under t
 
 ## Architecture
 ```text
-Request
-   |
-FastAPI
-   |
-Tokenizer
-   |
-Decode Loop
-   |
-├─ KV Cache
-├─ Streaming
-└─ Runtime Trace
-   |
-Response
+     Requests
+        |
+        v
++---------------+
+| Pending Queue |
++---------------+
+        |
+        v
++------------------------------+
+| Continuous Batching Scheduler|
++------------------------------+
+        |
+        v
++------------------------------+
+| Active Requests              |
++------------------------------+
+        |
+        v
++------------------------------+
+| Request State                |
+| - input_ids                  |
+| - KV Cache                   |
+| - attention_mask             |
+| - generated_tokens           |
++------------------------------+
+        |
+        v
++------------------------------+
+|   Decode Loop                |
++------------------------------+
+        |
+        +--> KV Cache
+        |
+        +--> Streaming
+        |
+        +--> Runtime Trace
+        |
+        v
+     Response
 ```
+
+## Continuous Batching Scheduler
+A toy continuous batching scheduler was implemented to simulate how modern LLM serving systems manage multiple concurrent requests.
+
+The scheduler maintains:
+- Pending request queue
+- Active request list
+- Request lifecycle management
+- Dynamic admission control
+- Request completion handling
+
+Each request is represented by a `RequestState` object that maintains generation state including KV cache, attention mask, generated tokens, and runtime metrics.
+
+The scheduler advances each active request one decoding step at a time and dynamically admits new requests when active slots become available.
+
+Note: this implementation focuses on request scheduling and lifecycle management. Requests are processed sequentially within each scheduling cycle. Batched forward inference (multiple requests sharing a single model forward pass) is planned as a future enhancement.
 
 ## Runtime Trace
 Generation metrics are persisted to a runtime trace log and correlated with requests using `request_id`.  
@@ -65,7 +108,8 @@ Generation metrics are persisted to a runtime trace log and correlated with requ
 ```
 
 ## Benchmarking
-The benchmark framework evaluates serving performance across different prompt lengths and output lengths.  
+### Single-Request Baseline
+The baseline benchmark evaluates single-request serving performance across different prompt lengths and output lengths.
 
 Collected metrics:
 - TTFT (Time To First Token)
@@ -105,7 +149,6 @@ http://127.0.0.1:8000/docs
 ```
 
 ## Next Steps
-- Request batching
-- Continuous batching scheduler
+- Batched forward inference
 - Paged KV Cache (vLLM-inspired)
 - Benchmarking under concurrent workloads
