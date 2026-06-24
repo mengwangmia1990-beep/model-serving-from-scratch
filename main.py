@@ -1,14 +1,16 @@
-from generation import generate_with_cache, stream_with_cache, run_scheduler
+from generation import generate_with_cache, stream_with_cache, run_scheduler, run_scheduler_batch
 import uuid
 from models.request_state import RequestState
 from collections import deque
 
 def test_scheduler():
     initial_requests = [
-        RequestState("r1", "where is seattle?", 1, True),
-        RequestState("r2", "what is AI?", 2, True),
-        RequestState("r3", "diff between cat and dog?", 2, True),
-        RequestState("r4", "how big is the universe?", 1, True)
+        RequestState("r1", "where is seattle?", 2, True),
+        RequestState("r2", "where is seattle?", 2, True),
+        RequestState("r3", "where is seattle?", 2, True),
+        # RequestState("r2", "what is AI?", 2, True),
+        # RequestState("r3", "diff between cat and dog?", 2, True),
+        # RequestState("r4", "how big is the universe?", 1, True)
     ]
 
     pending_queue = deque([
@@ -16,9 +18,12 @@ def test_scheduler():
         RequestState("r6", "is san juan island a good place for whale watching?", 2, True),
     ])
 
-    max_active_requests = 3
-    response = run_scheduler(initial_requests, pending_queue, max_active_requests)
-    print(response)
+    # max_active_requests = 3
+    # response = run_scheduler(initial_requests, pending_queue, max_active_requests)
+    # print(response)
+    
+    # run_scheduler_batch(initial_requests, pending_queue, max_active_requests)
+
 
 def test_stream():
     query = "where is seattle located at?"
