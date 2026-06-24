@@ -7,10 +7,15 @@ import json
 from pathlib import Path
 from models.request_state import RequestState
 from collections import deque
+from transformers.cache_utils import DynamicCache
 
 model_name = config.MODEL_NAME
 tokenizer = AutoTokenizer.from_pretrained(model_name)
+if tokenizer.pad_token is None:
+    tokenizer.pad_token = tokenizer.eos_token
+
 model = AutoModelForCausalLM.from_pretrained(model_name)
+model.config.pad_token_id = tokenizer.pad_token_id
 
 CURRENT_DIR = Path(__file__).resolve().parent
 RUNTIME_TRACE_FILE = CURRENT_DIR / config.RUNTIME_TRACE_LOG_FILE
@@ -182,6 +187,35 @@ def finish_request(request: RequestState):
     if trace:
         write_trace(trace)
 
+def dynamic_cache_to_tuple(cache):
+    return tuple(
+        (layer.keys, layer.values)
+        for layer in cache.layers
+    )
+
+def tuple_to_dynamic_cache(past_key_values):
+    if past_key_values is None:
+        return None
+
+    cache = DynamicCache()
+
+    for layer_idx, (key, value) in enumerate(past_key_values):
+        cache.update(
+            key_states=key,
+            value_states=value,
+            layer_idx=layer_idx,
+        )
+
+    return cache
+
+def to_dynamic_cache(past_key_values):
+    if past_key_values is None:
+        return None
+    if isinstance(past_key_values, tuple):
+        return DynamicCache.from_legacy_cache(past_key_values)
+    return past_key_values
+
+
 # generate one token per each request for scheduler
 def step_request(request: RequestState) -> int | None:
     if request.finished:
@@ -191,12 +225,12 @@ def step_request(request: RequestState) -> int | None:
         outputs = model(
             input_ids=request.current_input_ids,
             attention_mask=request.attention_mask,
-            past_key_values=request.past_key_values,
+            past_key_values=tuple_to_dynamic_cache(request.past_key_values),
             use_cache=True
         )
 
     # collect kv cache
-    request.past_key_values = outputs.past_key_values
+    request.past_key_values = dynamic_cache_to_tuple(outputs.past_key_values)
 
     # pick next token
     last_logits = outputs.logits[:, -1, :]
@@ -225,6 +259,189 @@ def step_request(request: RequestState) -> int | None:
         finish_request(request)
 
     return token_id
+
+
+def step_batched_requests(requests: list[RequestState]) -> dict[str, int | None]:
+    active = [r for r in requests if not r.finished]
+    if not active:
+        return {}
+    
+    # 先只 batch 当前 past_key_values 兼容的一组
+    # 最小 toy 版：要求它们 past length 一样
+    # 否则先 fallback 成单个处理，避免复杂 padding KV cache
+    past_lens = []
+    for r in active:
+        if r.past_key_values is None:
+            past_lens.append(None) # prefill stage can batch
+        else:
+            past_lens.append(r.past_key_values[0][0].shape[2])
+            # kv cache structure: [batch_size, head_num, seq_len, head_dim]
+            # e.g. [1, 2, 5, 64]
+            # 1 -> 1 request per batch
+            # 2 -> 2 heads
+            # 5 -> current processed total token count (prompt + predicted token)
+            # 64 -> head dimention (64 dimention vector)
+            # r.past_key_values[0][0].shape[2] --> 0th layer, key, seq_len
+            # r.past_key_values[0][1].shape[2] --> 0th layer, value, seq_len
+    
+    if len(set(past_lens)) > 1:
+        results = {}
+        for r in active:
+            results[r.request_id] = step_request(r)
+        return results
+    
+    # pad current_input_ids
+    batched_current_input_ids = torch.nn.utils.rnn.pad_sequence(
+        [r.current_input_ids.squeeze(0) for r in active],
+        batch_first=True,
+        padding_value=tokenizer.pad_token_id, # PAD
+    )
+    # pad attention_mask
+    batched_attention_mask = torch.nn.utils.rnn.pad_sequence(
+        [r.attention_mask.squeeze(0) for r in active],
+        batch_first=True,
+        padding_value=0
+    )
+    #==================================================================================================#
+    # prefill stage input ids and attention_mask padding
+    # input_ids =
+    # [
+    # [t1,t2,t3,t4],
+    # [t1,t2,PAD,PAD],
+    # [t1,t2,t3,PAD],
+    # ]
+
+    # attention_mask =
+    # [
+    # [1,1,1,1],
+    # [1,1,0,0],
+    # [1,1,1,0],
+    # ]
+    #==================================================================================================#
+    # decode stage input ids and attention_mask padding
+    # input_ids = 
+    # [
+    # [t5],
+    # [t3],
+    # [t4],
+    # ]
+
+    # attention_mask =
+    # [
+    # [1,1,1,1,1],
+    # [1,1,1,PAD,PAD],
+    # [1,1,1,1,PAD],
+    # ]
+    #==================================================================================================#
+
+    # batch past_key_values
+    if active[0].past_key_values is None:
+        batched_past = None
+    else:
+        batched_past = []
+        num_layers = len(active[0].past_key_values)
+
+        for layer_idx in range(num_layers):
+            keys = torch.cat(
+                [r.past_key_values[layer_idx][0] for r in active],
+                dim=0,
+            )
+            values = torch.cat(
+                [r.past_key_values[layer_idx][1] for r in active],
+                dim=0,
+            )
+            batched_past.append((keys, values))
+
+        batched_past = tuple_to_dynamic_cache(tuple(batched_past))
+
+    with torch.no_grad():
+        outputs = model(
+            input_ids=batched_current_input_ids,
+            attention_mask=batched_attention_mask,
+            past_key_values=batched_past, # model needs dynamic cache
+            use_cache=True,
+        )
+
+    # next token ids for all requests in the same batch
+    next_token_ids = torch.argmax(outputs.logits[:, -1, :], dim=-1)
+
+    outputs_past = dynamic_cache_to_tuple(outputs.past_key_values)
+    # print("output_past[0][0] shape")
+    # print(outputs_past[0][0].shape) # [3, 2, 6, 1] after prefill, 6 is the max padded seq_len.
+
+    # outputs_past KV Cache structure:
+    # layer_0
+    #     Key Tensor
+    #         Request0
+    #             ├── Head0: Key
+    #             └── Head1: Key
+    #         Request1
+    #             ├── Head0: Key
+    #             └── Head1: Key        
+    #         Request2
+    #             ├── Head0: Key
+    #             └── Head1: Key
+    #     Value Tensor
+    #         Request0
+    #             ├── Head0: Value
+    #             └── Head1: Value
+    #         Request1
+    #             ├── Head0: Value
+    #             └── Head1: Value        
+    #         Request2
+    #             ├── Head0: Value
+    #             └── Head1: Value
+    # layer_1:
+    #      Key Tensor
+    #      Value Tensor
+    
+    results = {}
+
+    # post processing --> for each active request
+    for i, r in enumerate(active):
+        # split kv cache back to each request
+        new_past = []
+        for layer_key, layer_value in outputs_past:
+            request_key = layer_key[i:i+1]
+            request_value = layer_value[i:i+1]
+            new_past.append(
+                (
+                    request_key,
+                    request_value
+                )
+            )
+        r.past_key_values = tuple(new_past)
+        # print(r.past_key_values[0][0].shape)
+
+        # log first token time
+        if r.first_token_time is None:
+            r.first_token_time = time.perf_counter()
+
+        token_id = next_token_ids[i].item()
+        if token_id == tokenizer.eos_token_id:
+            r.hit_eos = True
+            finish_request(r)
+            results[r.request_id] = None
+            continue
+
+        # update current_input_ids and attention_mask
+        next_token_id = next_token_ids[i].view(1, 1)
+        r.current_input_ids = next_token_id
+        r.attention_mask = torch.cat(
+            [r.attention_mask, torch.ones_like(next_token_id)],
+            dim=1,
+        )
+
+        r.generated_tokens += 1
+        r.generated_token_ids.append(token_id)
+
+        if r.generated_tokens >= r.max_new_tokens:
+            finish_request(r)
+
+        # save result: request_id : token_id
+        results[r.request_id] = token_id
+
+    return results
 
 
 def run_scheduler(
@@ -270,3 +487,51 @@ def run_scheduler(
         r.request_id: tokenizer.decode(r.generated_token_ids, skip_special_tokens=True)
         for r in all_requests
     }
+
+
+def run_scheduler_batch(
+    initial_requests: list[RequestState],
+    pending_queue: deque[RequestState] | None = None,
+    max_active_requests: int = 3,
+):
+    active_requests = []
+    all_requests = []
+
+    if pending_queue is None:
+        pending_queue = deque()
+
+    pending_queue = deque(
+        list(initial_requests) + list(pending_queue)
+    )
+
+    while active_requests or pending_queue:
+        while pending_queue and len(active_requests) < max_active_requests:
+            req = pending_queue.popleft()
+            
+            active_requests.append(req)
+            all_requests.append(req)
+            print("admitted:", req.request_id)
+
+        print("active requests: ", [req.request_id for req in active_requests])
+
+        results = step_batched_requests(active_requests)
+
+        # # simulate streaming mode: return next token id to current client
+        # for request_id, token_id in results.items():
+        #     print(request_id, tokenizer.decode([token_id]))
+
+        active_requests = [
+            r for r in active_requests
+            if not r.finished
+        ]
+    
+    final_outputs = {}
+    for r in all_requests:
+        final_outputs[r.request_id] = tokenizer.decode(
+            r.generated_token_ids,
+            skip_special_tokens=True
+        )
+    print("final_outputs:")
+    print(final_outputs)
+    return final_outputs
+
