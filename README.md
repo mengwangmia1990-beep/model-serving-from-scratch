@@ -9,12 +9,11 @@ The goal of this project is to understand how modern LLM inference works under t
 - EOS token based early stopping
 - FastAPI serving endpoint
 - Streaming generation with incremental token delivery
-- Runtime tracing (TTFT, latency, throughput)
-- Request correlation via `request_id`
-- Benchmark framework with automated evaluation
-- Performance visualization and analysis
 - Request state based generation lifecycle management
 - Toy continuous batching scheduler with active and pending request queues
+- Sequential and batched-forward scheduling modes
+- Runtime tracing and request correlation via `request_id`
+- Automated benchmarking and performance visualization
 
 ## Example API
 ### Request
@@ -34,46 +33,41 @@ The goal of this project is to understand how modern LLM inference works under t
 
 ## Architecture
 ```text
-     Requests
-        |
-        v
-+---------------+
-| Pending Queue |
-+---------------+
-        |
-        v
-+------------------------------+
-| Continuous Batching Scheduler|
-+------------------------------+
-        |
-        v
-+------------------------------+
-| Active Requests              |
-+------------------------------+
-        |
-        v
-+------------------------------+
-| Request State                |
-| - input_ids                  |
-| - KV Cache                   |
-| - attention_mask             |
-| - generated_tokens           |
-+------------------------------+
-        |
-        v
-+------------------------------+
-|   Decode Loop                |
-+------------------------------+
-        |
-        +--> KV Cache
-        |
-        +--> Streaming
-        |
-        +--> Runtime Trace
-        |
-        v
-     Response
+ Requests
+    |
+Pending Queue
+    |
+Scheduler
+    |
+Active Requests
+    |
+Batched Forward
+    |
+KV Cache Merge
+    |
+Model Forward
+    |
+KV Cache Split
+    |
+Request State Update
+    |
+Runtime Trace
+    |
+Response
 ```
+
+## Request Lifecycle
+Each request is represented by a `RequestState` object.  
+
+Generation state is maintained across decoding steps:  
+- Input token IDs
+- Attention mask
+- KV Cache
+- Generated Tokens
+- Runtime Metrics
+- Request Metadata
+
+This allows the scheduler to continuously advance active requests while dynamically admitting new requests.
 
 ## Continuous Batching Scheduler
 A toy continuous batching scheduler was implemented to simulate how modern LLM serving systems manage multiple concurrent requests.
@@ -85,11 +79,57 @@ The scheduler maintains:
 - Dynamic admission control
 - Request completion handling
 
-Each request is represented by a `RequestState` object that maintains generation state including KV cache, attention mask, generated tokens, and runtime metrics.
+### Scheduling Modes
+Two execution modes are implemented:
 
-The scheduler advances each active request one decoding step at a time and dynamically admits new requests when active slots become available.
+#### Sequential Scheduling
+Each active request advances independently. One model forward pass is executed per request.
+```text
+Request A -> Forward Pass
+Request B -> Forward Pass
+Request C -> Forward Pass
+```
 
-Note: this implementation focuses on request scheduling and lifecycle management. Requests are processed sequentially within each scheduling cycle. Batched forward inference (multiple requests sharing a single model forward pass) is planned as a future enhancement.
+#### Batched Forward Scheduling
+Multiple compatible requests are grouped into a single model forward pass.
+
+```text
+Request A
+Request B  ---> Batched Forward Pass
+Request C
+```
+
+The scheduler:
+1. Pads request inputs into a batch
+2. Merges KV caches
+3. Executes a single model forward pass
+4. Splits KV caches back into individual requests
+5. Updates each request state independently
+
+This reduces the number of forward passes required when multiple requests can be processed together.
+
+#### Current Limitation
+This toy batched-forward implementation only batches requests with identical KV-cache sequence lengths during decoding.  
+
+If requests have different KV-cache sequence lengths during decoding, the scheduler automatically falls back to sequential processing.  
+
+This keeps the implementation simple while demonstrating the core batching mechanics.
+
+## Streaming Generation
+Streaming generation returns tokens incrementally as they are produced by the model.
+```text
+User Request
+      |
+      v
+Generate Token
+      |
+      v
+Stream Token To Client
+      |
+      v
+Generate Next Token
+```
+This reduces perceived latency compared to waiting for the entire response to finish.
 
 ## Runtime Trace
 Generation metrics are persisted to a runtime trace log and correlated with requests using `request_id`.  
@@ -100,7 +140,7 @@ Generation metrics are persisted to a runtime trace log and correlated with requ
     "generated_tokens": 10,
     "total_tokens": 16,
     "max_new_tokens": 10,
-    "hit_eos": False,
+    "hit_eos": false,
     "end_to_end_latency_ms": 14.5,
     "ttft_ms": 1.74,
     "tokens_per_second": 692,
@@ -111,12 +151,10 @@ Generation metrics are persisted to a runtime trace log and correlated with requ
 ### Single-Request Baseline
 The baseline benchmark evaluates single-request serving performance across different prompt lengths and output lengths.
 
-Collected metrics:
+Collected metrics:  
 - TTFT (Time To First Token)
 - End-to-End Latency in ms
 - Tokens Per Second (TPS)
-
-Benchmark results are automatically correlated with runtime traces through request Ids.
 
 Benchmark visualizations include:
 - Latency vs Output Length
@@ -138,6 +176,32 @@ Benchmark visualizations include:
 #### Throughput vs Output Length
 ![alt text](image-2.png)
 
+---
+
+### Sequential Scheduling vs Batched Forward Scheduling
+A simple benchmark was conducted to compare sequential scheduling and batched-forward scheduling under the same workload.
+```
+=== Sequential Summary ===
+{
+  "num_requests": 5,
+  "avg_latency_ms": 18.745920015498996,
+  "avg_ttft_ms": 9.275939967483282,
+  "avg_tokens_per_second": 108.91488376173365
+}
+
+=== Batched Summary ===
+{
+  "num_requests": 5,
+  "avg_latency_ms": 6.430420046672225,
+  "avg_ttft_ms": 3.245260054245591,
+  "avg_tokens_per_second": 313.7067001068591
+}
+```
+
+### Key Findings
+Batched forward scheduling reduced average latency and TTFT while **significantly improving throughput by sharing model forward passes** across compatible requests.
+
+
 ## Run Locally
 ```bash
 pip install -r requirements.txt
@@ -149,6 +213,5 @@ http://127.0.0.1:8000/docs
 ```
 
 ## Next Steps
-- Batched forward inference
+- KV cache padding for heterogeneous decode batches
 - Paged KV Cache (vLLM-inspired)
-- Benchmarking under concurrent workloads

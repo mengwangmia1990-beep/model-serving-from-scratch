@@ -266,9 +266,9 @@ def step_batched_requests(requests: list[RequestState]) -> dict[str, int | None]
     if not active:
         return {}
     
-    # 先只 batch 当前 past_key_values 兼容的一组
-    # 最小 toy 版：要求它们 past length 一样
-    # 否则先 fallback 成单个处理，避免复杂 padding KV cache
+    # Only batch requests with compatible past_key_values
+    # Minimal toy implementation: requires the same past sequence length
+    # Otherwise fall back to single-request processing to avoid KV cache padding complexity
     past_lens = []
     for r in active:
         if r.past_key_values is None:
